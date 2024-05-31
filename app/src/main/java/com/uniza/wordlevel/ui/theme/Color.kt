@@ -2,10 +2,12 @@ package com.uniza.wordlevel.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
-val Purple80 = Color(0xFFD0BCFF)
-val PurpleGrey80 = Color(0xFFCCC2DC)
-val Pink80 = Color(0xFFEFB8C8)
+val MainGreen = Color(0xFF50A303)
+val MainYellow = Color(0xFFFDAC06)
+val MainCyan = Color(0xFF018171)
+val MainWhite = Color(0xFFFFFFFF)
 
-val Purple40 = Color(0xFF6650a4)
-val PurpleGrey40 = Color(0xFF625b71)
-val Pink40 = Color(0xFF7D5260)
+val SecondaryGreen = Color(0xFFC0EA17)
+val SecondaryYellow = Color(0xFFFECC31)
+val SecondaryCyan = Color(0xFF4FF3F3)
+val SecondaryGrey = Color(0xFF3C3F41)
