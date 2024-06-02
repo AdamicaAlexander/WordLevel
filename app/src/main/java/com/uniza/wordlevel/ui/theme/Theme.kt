@@ -36,8 +36,8 @@ private val LightColorScheme = lightColorScheme(
 
 @Composable
 fun WordLevelTheme(
-    viewmodels: ViewModels,
-    darkTheme: Boolean = viewmodels.settingsViewModel.isDarkModeEnabled.value,
+    viewModels: ViewModels,
+    darkTheme: Boolean = viewModels.isDarkModeEnabled.value,
     content: @Composable () -> Unit
 ) {
     val colorScheme = if (darkTheme) {

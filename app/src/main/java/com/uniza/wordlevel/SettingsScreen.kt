@@ -11,8 +11,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
@@ -22,9 +20,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
 @Composable
-fun SettingsScreen(viewmodels: ViewModels) {
-    val areNotificationsEnabled = remember { mutableStateOf(false) }
-
+fun SettingsScreen(viewModels: ViewModels) {
     Surface(
         color = MaterialTheme.colorScheme.background,
         modifier = Modifier.fillMaxSize()
@@ -43,13 +39,13 @@ fun SettingsScreen(viewmodels: ViewModels) {
 
             CheckboxWithLabel(
                 label = "Dark Mode",
-                checkedState = viewmodels.settingsViewModel.isDarkModeEnabled,
+                checkedState = viewModels.isDarkModeEnabled,
                 modifier = Modifier.padding(top = 10.dp)
             )
 
             CheckboxWithLabel(
                 label = "Notifications",
-                checkedState = areNotificationsEnabled
+                checkedState = viewModels.areNotificationsEnabled
             )
         }
     }

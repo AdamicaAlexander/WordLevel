@@ -39,8 +39,8 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            val viewmodels = ViewModels(this)
-            WordLevelTheme(viewmodels) {
+            val viewModels = ViewModels(this)
+            WordLevelTheme(viewModels) {
                 val navController = rememberNavController()
                 NavHost(
                     navController = navController,
@@ -61,10 +61,10 @@ class MainActivity : ComponentActivity() {
                         arguments = listOf(navArgument("level") { type = NavType.IntType })
                     ) { backStackEntry ->
                         val level = backStackEntry.arguments?.getInt("level")
-                        GameScreen(viewmodels, navController, level = level)
+                        GameScreen(viewModels, navController, level = level)
                     }
                     composable("settings") {
-                        SettingsScreen(viewmodels)
+                        SettingsScreen(viewModels)
                     }
                     composable("howToPlay") {
                         HowToPlayScreen()

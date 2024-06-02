@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
@@ -23,6 +24,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -35,19 +38,26 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
+import kotlinx.coroutines.delay
 
 @Composable
-fun GameScreen(viewmodels: ViewModels, navController: NavController, level: Int?) {
-    val levelWords = viewmodels.levelWords
-    val thisLevelWord = levelWords[level!! - 1]
-    val viableWords = viewmodels.viableWords
+fun GameScreen(viewModels: ViewModels, navController: NavController, level: Int?) {
+    val levelWords = viewModels.levelWords
+    val viableWords = viewModels.viableWords
+    val currentLevelWord = levelWords[level!! - 1]
+    val currentLevelGuesses = viewModels.guesses[level - 1]
 
     val rows = 6
     val columns = 5
-    val gridState = remember { mutableStateListOf(*Array(rows) { mutableStateListOf(*Array(columns) { "" }) }) }
-    val currentColumn = remember { mutableStateOf(0) }
-    val currentRow = remember { mutableStateOf(0) }
-    val settledRows = remember { mutableStateListOf<Boolean>().apply { addAll(List(rows) { false }) } }
+    var currentRow = 0
+    var currentColumn = 0
+
+    val gridState =
+        remember { mutableStateListOf(*Array(rows) { mutableStateListOf(*Array(columns) { "" }) }) }
+    val updateDummy = remember { mutableStateOf(false) }
+
+    val showWrongEntryPopup = remember { mutableStateOf(false) }
+    val showGameFinishedDialog = remember { mutableStateOf(false) }
 
     Surface(
         color = MaterialTheme.colorScheme.background,
@@ -62,13 +72,17 @@ fun GameScreen(viewmodels: ViewModels, navController: NavController, level: Int?
                 text = "WordLevel",
                 fontSize = 30.sp,
                 fontFamily = FontFamily(Font(R.font.fredokaone_regular)),
-                modifier = Modifier.align(Alignment.TopCenter).padding(top = 22.dp)
+                modifier = Modifier
+                    .align(Alignment.TopCenter)
+                    .padding(top = 22.dp)
             )
 
             // Settings Button
             IconButton(
                 onClick = { navController.navigate("settings") },
-                modifier = Modifier.align(Alignment.TopStart).padding(16.dp)
+                modifier = Modifier
+                    .align(Alignment.TopStart)
+                    .padding(16.dp)
             ) {
                 Icon(
                     painterResource(id = R.drawable.settings_final),
@@ -79,7 +93,9 @@ fun GameScreen(viewmodels: ViewModels, navController: NavController, level: Int?
             // How to Play Button
             IconButton(
                 onClick = { navController.navigate("howToPlay") },
-                modifier = Modifier.align(Alignment.TopEnd).padding(16.dp)
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(16.dp)
             ) {
                 Icon(
                     painterResource(id = R.drawable.questionmark_final),
@@ -95,36 +111,50 @@ fun GameScreen(viewmodels: ViewModels, navController: NavController, level: Int?
                     .fillMaxWidth(),
                 contentAlignment = Alignment.Center
             ) {
-                Grid(rows, columns, gridState, settledRows, thisLevelWord)
+                Grid(
+                    rows,
+                    columns,
+                    gridState,
+                    currentLevelGuesses,
+                    currentLevelWord,
+                    updateDummy.value
+                )
             }
 
             // Custom Keyboard
             CustomKeyboard(
                 onKeyPress = { key ->
-                    if (currentColumn.value < columns) {
-                        gridState[currentRow.value][currentColumn.value] = key
-                        currentColumn.value++
+                    if (currentColumn < columns) {
+                        gridState[currentRow][currentColumn] = key
+                        currentColumn++
                     }
                 },
                 onBackspace = {
-                    if (currentColumn.value > 0 && !settledRows[rows - 1]) {
-                        currentColumn.value--
-                        gridState[currentRow.value][currentColumn.value] = ""
+                    if (currentColumn > 0 && currentLevelGuesses.isEmpty(rows - 1)) {
+                        currentColumn--
+                        gridState[currentRow][currentColumn] = ""
                     }
                 },
                 onEnter = {
-                    val word = gridState[currentRow.value].joinToString("").lowercase()
+                    val word = gridState[currentRow].joinToString("").lowercase()
                     if (viableWords.contains(word)) {
-                        settledRows[currentRow.value] = true
-                        if (currentRow.value < rows - 1) {
-                            currentRow.value++
-                            currentColumn.value = 0
+                        currentLevelGuesses.setGuess(currentRow, word)
+                        updateDummy.value = !updateDummy.value
+                        if (currentRow < rows - 1 && word != currentLevelWord) {
+                            currentRow++
+                            currentColumn = 0
+                        } else {
+                            showGameFinishedDialog.value = true
                         }
+                    } else {
+                        showWrongEntryPopup.value = true
                     }
                 }
             )
         }
     }
+    WrongEntryPopup(showWrongEntryPopup)
+    GameFinishedDialog(showGameFinishedDialog, level, true)
 }
 
 @Composable
@@ -132,8 +162,9 @@ fun Grid(
     rows: Int,
     columns: Int,
     gridState: List<MutableList<String>>,
-    settledRows: List<Boolean>,
-    thisLevelWord: String
+    currentLevelGuesses: Guesses,
+    currentLevelWord: String,
+    updateDummy: Boolean
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
         repeat(rows) { rowIndex ->
@@ -141,10 +172,10 @@ fun Grid(
                 repeat(columns) { columnIndex ->
                     val letter = gridState[rowIndex][columnIndex].lowercase()
                     var backgroundColor = MaterialTheme.colorScheme.background
-                    if (settledRows[rowIndex]) {
+                    if (!currentLevelGuesses.isEmpty(rowIndex)) {
                         backgroundColor = when {
-                            letter == thisLevelWord[columnIndex].toString() -> MaterialTheme.colorScheme.primary
-                            thisLevelWord.contains(letter) -> MaterialTheme.colorScheme.secondary
+                            letter == currentLevelWord[columnIndex].toString() -> MaterialTheme.colorScheme.primary
+                            currentLevelWord.contains(letter) -> MaterialTheme.colorScheme.secondary
                             else -> Color(0xFF6E6E6E)
                         }
                     }
@@ -194,8 +225,7 @@ fun CustomKeyboard(
                 if (index == rows.lastIndex) {
                     Button(
                         onClick = { onEnter() },
-                        modifier = Modifier
-                            .size(50.dp, 50.dp),
+                        modifier = Modifier.size(50.dp, 50.dp),
                         shape = RoundedCornerShape(5.dp),
                         contentPadding = PaddingValues(0.dp),
                         colors = ButtonDefaults.buttonColors(
@@ -215,8 +245,7 @@ fun CustomKeyboard(
                 row.forEach { key ->
                     Button(
                         onClick = { onKeyPress(key.toString()) },
-                        modifier = Modifier
-                            .size(35.dp, 50.dp),
+                        modifier = Modifier.size(35.dp, 50.dp),
                         shape = RoundedCornerShape(5.dp),
                         contentPadding = PaddingValues(0.dp),
                         colors = ButtonDefaults.buttonColors(
@@ -236,8 +265,7 @@ fun CustomKeyboard(
                 if (index == rows.lastIndex) {
                     Button(
                         onClick = { onBackspace() },
-                        modifier = Modifier
-                            .size(50.dp, 50.dp),
+                        modifier = Modifier.size(50.dp, 50.dp),
                         shape = RoundedCornerShape(5.dp),
                         contentPadding = PaddingValues(0.dp),
                         colors = ButtonDefaults.buttonColors(
@@ -255,6 +283,75 @@ fun CustomKeyboard(
                 }
             }
             Spacer(modifier = Modifier.height(5.dp))
+        }
+    }
+}
+
+@Composable
+fun GameFinishedDialog(showDialog: MutableState<Boolean>, level: Int, isWin: Boolean) {
+    if (showDialog.value) {
+        val text =
+            if (isWin) "Congratulations!\nLevel $level is a WIN" else "Dang!\nLevel $level is a LOSS\nBetter luck next time."
+        AlertDialog(
+            onDismissRequest = { showDialog.value = false },
+            title = {
+                Text(
+                    text = "Game Finished",
+                    fontSize = 30.sp,
+                    fontFamily = FontFamily(Font(R.font.fredokaone_regular))
+                )
+            },
+            text = {
+                Text(
+                    text = text,
+                    fontSize = 20.sp,
+                    fontFamily = FontFamily(Font(R.font.fredokaone_regular))
+                )
+            },
+            confirmButton = {
+                Button(
+                    onClick = { showDialog.value = false },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.tertiary,
+                        contentColor = Color.White
+                    )
+                ) {
+                    Text(
+                        text = "OK",
+                        fontSize = 20.sp,
+                        fontFamily = FontFamily(Font(R.font.fredokaone_regular))
+                    )
+                }
+            }
+        )
+    }
+}
+
+@Composable
+fun WrongEntryPopup(showPopup: MutableState<Boolean>) {
+    if (showPopup.value) {
+        Column(
+            modifier = Modifier.fillMaxSize(),
+            verticalArrangement = Arrangement.Center,
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Box(
+                contentAlignment = Alignment.Center,
+                modifier = Modifier
+                    .size(150.dp, 75.dp)
+                    .background(Color(0xFF8C8C8C), RoundedCornerShape(15.dp))
+            ) {
+                Text(
+                    text = "Wrong entry",
+                    fontSize = 20.sp,
+                    fontFamily = FontFamily(Font(R.font.fredokaone_regular)),
+                    color = Color.White
+                )
+            }
+            LaunchedEffect(key1 = showPopup.value) {
+                delay(1000L)
+                showPopup.value = false
+            }
         }
     }
 }
