@@ -60,7 +60,7 @@ fun GameScreen(viewModel: AppViewModel, navController: NavController, level: Int
     var currentRow = 0
     var currentColumn = 0
     var gameEnd = false
-    var gameWin = false
+    val gameWin = remember { mutableStateOf(false) }
 
     val gridState =
         remember { mutableStateListOf(*Array(rows) { mutableStateListOf(*Array(columns) { "" }) }) }
@@ -181,7 +181,7 @@ fun GameScreen(viewModel: AppViewModel, navController: NavController, level: Int
                         } else {
                             gameEnd = true
                             if (word == currentLevelWord.lowercase()) {
-                                gameWin = true
+                                gameWin.value = true
                             }
                             showGameFinishedDialog.value = true
                         }
@@ -194,7 +194,7 @@ fun GameScreen(viewModel: AppViewModel, navController: NavController, level: Int
         }
     }
     WrongEntryPopup(showWrongEntryPopup)
-    GameFinishedDialog(showGameFinishedDialog, level, gameWin)
+    GameFinishedDialog(showGameFinishedDialog, level, gameWin.value)
 }
 
 @Composable
