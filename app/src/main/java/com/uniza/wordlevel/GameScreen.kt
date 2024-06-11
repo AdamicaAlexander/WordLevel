@@ -1,5 +1,6 @@
 package com.uniza.wordlevel
 
+import android.content.pm.ActivityInfo
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -44,6 +45,7 @@ import kotlinx.coroutines.delay
 
 @Composable
 fun GameScreen(viewModel: AppViewModel, navController: NavController, level: Int) {
+    LockScreenOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT)
     val gameData by viewModel.getGameData(level).observeAsState(GameData(level))
     val currentLevelWord = viewModel.levelWords[level - 1]
     val currentLevelGuesses = mutableListOf(

@@ -4,11 +4,12 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -26,44 +27,50 @@ fun HowToPlayScreen() {
     Surface(
         color = MaterialTheme.colorScheme.background
     ) {
-        Column(
+        LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            Text(
-                text = "How to Play",
-                fontSize = 30.sp,
-                fontFamily = FontFamily(Font(R.font.fredokaone_regular)),
-                modifier = Modifier
-                    .padding(bottom = 12.dp)
-                    .align(Alignment.CenterHorizontally)
-            )
+            item {
+                Box(modifier = Modifier.fillMaxWidth()) {
+                    Text(
+                        text = "How to Play",
+                        fontSize = 30.sp,
+                        fontFamily = FontFamily(Font(R.font.fredokaone_regular)),
+                        modifier = Modifier.align(Alignment.Center)
+                    )
+                }
+            }
 
-            Text(
-                text = "Guess the Wordle in 6 tries.",
-                fontSize = 20.sp,
-                fontFamily = FontFamily(Font(R.font.fredokaone_regular)),
-                modifier = Modifier.padding(bottom = 8.dp)
-            )
+            item {
+                Text(
+                    text = "Guess the Wordle in 6 tries.",
+                    fontSize = 20.sp,
+                    fontFamily = FontFamily(Font(R.font.fredokaone_regular))
+                )
+            }
 
-            Text(
-                text = "• Each guess must be a valid 5-letter word.\n• The color of the tiles will change to show how close your guess was to the word.",
-                fontSize = 18.sp,
-                fontFamily = FontFamily(Font(R.font.fredokaone_regular)),
-                modifier = Modifier.padding(bottom = 12.dp)
-            )
+            item {
+                Text(
+                    text = "• Each guess must be a valid 5-letter word.\n• The color of the tiles will change to show how close your guess was to the word.",
+                    fontSize = 18.sp,
+                    fontFamily = FontFamily(Font(R.font.fredokaone_regular))
+                )
+            }
 
-            Text(
-                text = "Examples",
-                fontSize = 20.sp,
-                fontFamily = FontFamily(Font(R.font.fredokaone_regular)),
-                modifier = Modifier.padding(bottom = 8.dp)
-            )
+            item {
+                Text(
+                    text = "Examples",
+                    fontSize = 20.sp,
+                    fontFamily = FontFamily(Font(R.font.fredokaone_regular))
+                )
+            }
 
-            ExampleGrid(1)
-            ExampleGrid(2)
-            ExampleGrid(3)
+            item { ExampleGrid(1) }
+            item { ExampleGrid(2) }
+            item { ExampleGrid(3) }
         }
     }
 }
@@ -95,7 +102,7 @@ fun ExampleGrid(example: Int) {
             }
         }
     }
-    Row(Modifier.padding(bottom = 16.dp)) {
+    Row(Modifier.padding(bottom = 8.dp)) {
         val text = when (example) {
             1 -> "A is in the word and in the correct spot."
             2 -> "L is in the word but in the wrong spot."

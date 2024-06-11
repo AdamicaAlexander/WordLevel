@@ -1,5 +1,6 @@
 package com.uniza.wordlevel
 
+import android.content.pm.ActivityInfo
 import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -47,7 +48,9 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            WordLevelTheme(viewModel.settingsData.observeAsState().value?.darkModeEnabled ?: false) {
+            WordLevelTheme(
+                viewModel.settingsData.observeAsState().value?.darkModeEnabled ?: false
+            ) {
                 val navController = rememberNavController()
                 NavHost(
                     navController = navController,
@@ -91,6 +94,7 @@ fun MenuScreen(
     onSettingsClicked: () -> Unit,
     onHowToPlayClicked: () -> Unit
 ) {
+    LockScreenOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT)
     Surface(
         color = MaterialTheme.colorScheme.background,
         modifier = Modifier.fillMaxSize()
