@@ -9,7 +9,6 @@ import androidx.compose.runtime.SideEffect
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
-import com.uniza.wordlevel.ViewModels
 
 private val DarkColorScheme = darkColorScheme(
     primary = SecondaryGreen,
@@ -36,8 +35,7 @@ private val LightColorScheme = lightColorScheme(
 
 @Composable
 fun WordLevelTheme(
-    viewModels: ViewModels,
-    darkTheme: Boolean = viewModels.isDarkModeEnabled.value,
+    darkTheme: Boolean,
     content: @Composable () -> Unit
 ) {
     val colorScheme = if (darkTheme) {

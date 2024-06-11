@@ -26,6 +26,8 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -41,19 +43,42 @@ import androidx.navigation.NavController
 import kotlinx.coroutines.delay
 
 @Composable
-fun GameScreen(viewModels: ViewModels, navController: NavController, level: Int?) {
-    val levelWords = viewModels.levelWords
-    val viableWords = viewModels.viableWords
-    val currentLevelWord = levelWords[level!! - 1]
-    val currentLevelGuesses = viewModels.guesses[level - 1]
+fun GameScreen(viewModel: AppViewModel, navController: NavController, level: Int) {
+    val gameData by viewModel.getGameData(level).observeAsState(GameData(level))
+    val currentLevelWord = viewModel.levelWords[level - 1]
+    val currentLevelGuesses = mutableListOf(
+        gameData.guess1,
+        gameData.guess2,
+        gameData.guess3,
+        gameData.guess4,
+        gameData.guess5,
+        gameData.guess6
+    )
 
     val rows = 6
     val columns = 5
     var currentRow = 0
     var currentColumn = 0
+    var gameEnd = false
+    var gameWin = false
 
     val gridState =
         remember { mutableStateListOf(*Array(rows) { mutableStateListOf(*Array(columns) { "" }) }) }
+
+    gridState.forEachIndexed { rowIndex, row ->
+        if (currentLevelGuesses[rowIndex].isEmpty()) {
+            return@forEachIndexed
+        }
+        row.forEachIndexed { columnIndex, column ->
+            gridState[rowIndex][columnIndex] = currentLevelGuesses[rowIndex][columnIndex].toString()
+            currentColumn++
+        }
+        if (currentRow < rows - 1 && currentLevelGuesses[rowIndex] != currentLevelWord) {
+            currentRow++
+            currentColumn = 0
+        }
+    }
+
     val updateDummy = remember { mutableStateOf(false) }
 
     val showWrongEntryPopup = remember { mutableStateOf(false) }
@@ -130,22 +155,37 @@ fun GameScreen(viewModels: ViewModels, navController: NavController, level: Int?
                     }
                 },
                 onBackspace = {
-                    if (currentColumn > 0 && currentLevelGuesses.isEmpty(rows - 1)) {
+                    if (currentColumn > 0 && !gameEnd) {
                         currentColumn--
                         gridState[currentRow][currentColumn] = ""
                     }
                 },
                 onEnter = {
                     val word = gridState[currentRow].joinToString("").lowercase()
-                    if (viableWords.contains(word)) {
-                        currentLevelGuesses.setGuess(currentRow, word)
-                        updateDummy.value = !updateDummy.value
+                    if (viewModel.viableWords.contains(word)) {
+                        currentLevelGuesses[currentRow] = word
+                        val updatedGameData = when (currentRow) {
+                            0 -> gameData.copy(guess1 = word)
+                            1 -> gameData.copy(guess2 = word)
+                            2 -> gameData.copy(guess3 = word)
+                            3 -> gameData.copy(guess4 = word)
+                            4 -> gameData.copy(guess5 = word)
+                            5 -> gameData.copy(guess6 = word)
+                            else -> gameData
+                        }
+                        viewModel.saveGameData(updatedGameData)
+
                         if (currentRow < rows - 1 && word != currentLevelWord) {
                             currentRow++
                             currentColumn = 0
                         } else {
+                            gameEnd = true
+                            if (word == currentLevelWord.lowercase()) {
+                                gameWin = true
+                            }
                             showGameFinishedDialog.value = true
                         }
+                        updateDummy.value = !updateDummy.value
                     } else {
                         showWrongEntryPopup.value = true
                     }
@@ -154,7 +194,7 @@ fun GameScreen(viewModels: ViewModels, navController: NavController, level: Int?
         }
     }
     WrongEntryPopup(showWrongEntryPopup)
-    GameFinishedDialog(showGameFinishedDialog, level, true)
+    GameFinishedDialog(showGameFinishedDialog, level, gameWin)
 }
 
 @Composable
@@ -162,7 +202,7 @@ fun Grid(
     rows: Int,
     columns: Int,
     gridState: List<MutableList<String>>,
-    currentLevelGuesses: Guesses,
+    currentLevelGuesses: List<String>,
     currentLevelWord: String,
     updateDummy: Boolean
 ) {
@@ -172,7 +212,7 @@ fun Grid(
                 repeat(columns) { columnIndex ->
                     val letter = gridState[rowIndex][columnIndex].lowercase()
                     var backgroundColor = MaterialTheme.colorScheme.background
-                    if (!currentLevelGuesses.isEmpty(rowIndex)) {
+                    if (currentLevelGuesses[rowIndex].isNotEmpty()) {
                         backgroundColor = when {
                             letter == currentLevelWord[columnIndex].toString() -> MaterialTheme.colorScheme.primary
                             currentLevelWord.contains(letter) -> MaterialTheme.colorScheme.secondary
@@ -325,6 +365,7 @@ fun GameFinishedDialog(showDialog: MutableState<Boolean>, level: Int, isWin: Boo
             }
         )
     }
+
 }
 
 @Composable

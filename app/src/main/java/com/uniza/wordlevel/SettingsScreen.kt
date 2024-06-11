@@ -11,6 +11,11 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.livedata.observeAsState
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
@@ -20,7 +25,12 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
 @Composable
-fun SettingsScreen(viewModels: ViewModels) {
+fun SettingsScreen(viewModel: AppViewModel, notificationHandler: NotificationHandler) {
+    val settingsData by viewModel.settingsData.observeAsState()
+    val darkModeState = rememberSaveable { mutableStateOf(settingsData?.darkModeEnabled ?: false) }
+    val notificationsState =
+        rememberSaveable { mutableStateOf(settingsData?.notificationsEnabled ?: false) }
+
     Surface(
         color = MaterialTheme.colorScheme.background,
         modifier = Modifier.fillMaxSize()
@@ -39,27 +49,57 @@ fun SettingsScreen(viewModels: ViewModels) {
 
             CheckboxWithLabel(
                 label = "Dark Mode",
-                checkedState = viewModels.isDarkModeEnabled,
-                modifier = Modifier.padding(top = 10.dp)
+                checkedState = darkModeState,
+                modifier = Modifier.padding(top = 10.dp),
+                onCheckedChange = {
+                    darkModeState.value = it
+                    viewModel.saveSettings(
+                        settingsData?.copy(
+                            darkModeEnabled = it,
+                            notificationsEnabled = notificationsState.value
+                        ) ?: SettingsData(
+                            darkModeEnabled = it,
+                            notificationsEnabled = notificationsState.value
+                        )
+                    )
+                }
             )
 
             CheckboxWithLabel(
                 label = "Notifications",
-                checkedState = viewModels.areNotificationsEnabled
+                checkedState = notificationsState,
+                onCheckedChange = {
+                    notificationsState.value = it
+                    viewModel.saveSettings(
+                        settingsData?.copy(
+                            darkModeEnabled = darkModeState.value,
+                            notificationsEnabled = it
+                        ) ?: SettingsData(
+                            darkModeEnabled = darkModeState.value,
+                            notificationsEnabled = it
+                        )
+                    )
+                    notificationHandler.setupDailyNotification(it)
+                }
             )
         }
     }
 }
 
 @Composable
-fun CheckboxWithLabel(label: String, checkedState: androidx.compose.runtime.MutableState<Boolean>, modifier: Modifier = Modifier) {
+fun CheckboxWithLabel(
+    label: String,
+    checkedState: MutableState<Boolean>,
+    modifier: Modifier = Modifier,
+    onCheckedChange: (Boolean) -> Unit
+) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
         modifier = modifier
     ) {
         Checkbox(
             checked = checkedState.value,
-            onCheckedChange = { checkedState.value = it },
+            onCheckedChange = onCheckedChange,
             modifier = Modifier.scale(1.25f)
         )
         Text(

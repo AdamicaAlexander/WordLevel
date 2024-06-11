@@ -1,8 +1,11 @@
 package com.uniza.wordlevel
 
+import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.activity.viewModels
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -18,6 +21,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -36,11 +40,14 @@ import androidx.navigation.navArgument
 import com.uniza.wordlevel.ui.theme.WordLevelTheme
 
 class MainActivity : ComponentActivity() {
+    private val viewModel: AppViewModel by viewModels()
+    private val requestPermissionLauncher =
+        registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted -> }
+    private val notificationHandler by lazy { NotificationHandler(this) }
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            val viewModels = ViewModels(this)
-            WordLevelTheme(viewModels) {
+            WordLevelTheme(viewModel.settingsData.observeAsState().value?.darkModeEnabled ?: false) {
                 val navController = rememberNavController()
                 NavHost(
                     navController = navController,
@@ -61,16 +68,19 @@ class MainActivity : ComponentActivity() {
                         arguments = listOf(navArgument("level") { type = NavType.IntType })
                     ) { backStackEntry ->
                         val level = backStackEntry.arguments?.getInt("level")
-                        GameScreen(viewModels, navController, level = level)
+                        GameScreen(viewModel, navController, level!!)
                     }
                     composable("settings") {
-                        SettingsScreen(viewModels)
+                        SettingsScreen(viewModel, notificationHandler)
                     }
                     composable("howToPlay") {
                         HowToPlayScreen()
                     }
                 }
             }
+        }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            notificationHandler.requestNotificationPermission(requestPermissionLauncher)
         }
     }
 }
@@ -92,7 +102,7 @@ fun MenuScreen(
                 contentDescription = "Logo",
                 modifier = Modifier
                     .align(Alignment.Center)
-                    .offset(y = -150.dp),
+                    .offset(y = (-150).dp),
                 contentScale = ContentScale.Fit
             )
 
@@ -119,7 +129,9 @@ fun MenuScreen(
             // Settings Button
             IconButton(
                 onClick = { onSettingsClicked() },
-                modifier = Modifier.align(Alignment.TopStart).padding(16.dp)
+                modifier = Modifier
+                    .align(Alignment.TopStart)
+                    .padding(16.dp)
             ) {
                 Icon(
                     painterResource(id = R.drawable.settings_final),
@@ -130,7 +142,9 @@ fun MenuScreen(
             // How to Play Button
             IconButton(
                 onClick = { onHowToPlayClicked() },
-                modifier = Modifier.align(Alignment.TopEnd).padding(16.dp)
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(16.dp)
             ) {
                 Icon(
                     painterResource(id = R.drawable.questionmark_final),

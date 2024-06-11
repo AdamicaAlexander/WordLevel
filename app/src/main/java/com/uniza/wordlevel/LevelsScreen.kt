@@ -45,7 +45,9 @@ fun LevelsScreen(navController: NavController) {
                 )
                 levels.forEach { rowLevels ->
                     Row(
-                        modifier = Modifier.fillMaxWidth().padding(vertical = 5.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 5.dp),
                         horizontalArrangement = Arrangement.SpaceEvenly
                     ) {
                         rowLevels.forEach { level ->
